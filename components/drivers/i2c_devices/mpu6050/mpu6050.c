@@ -77,7 +77,7 @@ bool mpu6050Test(void)
  */
 bool mpu6050TestConnection()
 {
-    return mpu6050GetDeviceID() == 0b110100;
+    return mpu6050GetDeviceID() == 0x70;
 }
 
 /** Do a MPU6050 self test.
@@ -3196,8 +3196,7 @@ void mpu6050SetFIFOByte(uint8_t data)
  */
 uint8_t mpu6050GetDeviceID()
 {
-    i2cdevReadBits(I2Cx, devAddr, MPU6050_RA_WHO_AM_I, MPU6050_WHO_AM_I_BIT, MPU6050_WHO_AM_I_LENGTH,
-                   buffer);
+    i2cdevReadByte(I2Cx, devAddr, MPU6050_RA_WHO_AM_I, buffer);
     return buffer[0];
 }
 /** Set Device ID.

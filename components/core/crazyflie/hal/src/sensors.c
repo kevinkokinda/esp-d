@@ -231,7 +231,6 @@ void sensorsSetAccMode(accModes accMode) {
 void __attribute__((used)) EXTI14_Callback(void) {
   activeImplementation->dataAvailableCallback();
 }
-
 static const sensorsImplementation_t* findImplementation(SensorImplementation_t implementation) {
   const sensorsImplementation_t* result = 0;
 
@@ -244,3 +243,4 @@ static const sensorsImplementation_t* findImplementation(SensorImplementation_t 
 
   return result;
 }
+

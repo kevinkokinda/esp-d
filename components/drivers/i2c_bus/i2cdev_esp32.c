@@ -84,7 +84,7 @@ bool i2cdevReadBits(I2C_Dev *dev, uint8_t devAddress, uint8_t memAddress,
 bool i2cdevReadReg8(I2C_Dev *dev, uint8_t devAddress, uint8_t memAddress,
                     uint16_t len, uint8_t *data)
 {
-    if (xSemaphoreTake(dev->isBusFreeMutex, (TickType_t)5) == pdFALSE) {
+    if (xSemaphoreTake(dev->isBusFreeMutex, (TickType_t)I2C_TIMEOUT) == pdFALSE) {
         return false;
     }
 
@@ -98,7 +98,7 @@ bool i2cdevReadReg8(I2C_Dev *dev, uint8_t devAddress, uint8_t memAddress,
     i2c_master_write_byte(cmd, (devAddress << 1) | I2C_MASTER_READ, I2C_MASTER_ACK_EN);
     i2c_master_read(cmd, data, len, I2C_MASTER_LAST_NACK);
     i2c_master_stop(cmd);
-    esp_err_t err = i2c_master_cmd_begin(dev->def->i2cPort, cmd, (TickType_t)5);
+    esp_err_t err = i2c_master_cmd_begin(dev->def->i2cPort, cmd, (TickType_t)I2C_TIMEOUT);
     i2c_cmd_link_delete(cmd);
 
     xSemaphoreGive(dev->isBusFreeMutex);
@@ -140,7 +140,7 @@ bool i2cdevReadReg8(I2C_Dev *dev, uint8_t devAddress, uint8_t memAddress,
 bool i2cdevReadReg16(I2C_Dev *dev, uint8_t devAddress, uint16_t memAddress,
                      uint16_t len, uint8_t *data)
 {
-    if (xSemaphoreTake(dev->isBusFreeMutex, (TickType_t)5) == pdFALSE) {
+    if (xSemaphoreTake(dev->isBusFreeMutex, (TickType_t)I2C_TIMEOUT) == pdFALSE) {
         return false;
     }
 
@@ -157,7 +157,7 @@ bool i2cdevReadReg16(I2C_Dev *dev, uint8_t devAddress, uint16_t memAddress,
     i2c_master_write_byte(cmd, (devAddress << 1) | I2C_MASTER_READ, I2C_MASTER_ACK_EN);
     i2c_master_read(cmd, data, len, I2C_MASTER_LAST_NACK);
     i2c_master_stop(cmd);
-    esp_err_t err = i2c_master_cmd_begin(dev->def->i2cPort, cmd, (TickType_t)5);
+    esp_err_t err = i2c_master_cmd_begin(dev->def->i2cPort, cmd, (TickType_t)I2C_TIMEOUT);
     i2c_cmd_link_delete(cmd);
 
     xSemaphoreGive(dev->isBusFreeMutex);
@@ -233,7 +233,7 @@ bool i2cdevWriteBits(I2C_Dev *dev, uint8_t devAddress, uint8_t memAddress,
 bool i2cdevWriteReg8(I2C_Dev *dev, uint8_t devAddress, uint8_t memAddress,
                      uint16_t len, uint8_t *data)
 {
-    if (xSemaphoreTake(dev->isBusFreeMutex, (TickType_t)5) == pdFALSE) {
+    if (xSemaphoreTake(dev->isBusFreeMutex, (TickType_t)I2C_TIMEOUT) == pdFALSE) {
         return false;
     }
 
@@ -245,7 +245,7 @@ bool i2cdevWriteReg8(I2C_Dev *dev, uint8_t devAddress, uint8_t memAddress,
     }
     i2c_master_write(cmd, (uint8_t *)data, len, I2C_MASTER_ACK_EN);
     i2c_master_stop(cmd);
-    esp_err_t err = i2c_master_cmd_begin(dev->def->i2cPort, cmd, (TickType_t)5);
+    esp_err_t err = i2c_master_cmd_begin(dev->def->i2cPort, cmd, (TickType_t)I2C_TIMEOUT);
     i2c_cmd_link_delete(cmd);
 
     xSemaphoreGive(dev->isBusFreeMutex);
@@ -287,7 +287,7 @@ bool i2cdevWriteReg8(I2C_Dev *dev, uint8_t devAddress, uint8_t memAddress,
 bool i2cdevWriteReg16(I2C_Dev *dev, uint8_t devAddress, uint16_t memAddress,
                       uint16_t len, uint8_t *data)
 {
-    if (xSemaphoreTake(dev->isBusFreeMutex, (TickType_t)5) == pdFALSE) {
+    if (xSemaphoreTake(dev->isBusFreeMutex, (TickType_t)I2C_TIMEOUT) == pdFALSE) {
         return false;
     }
 
@@ -302,7 +302,7 @@ bool i2cdevWriteReg16(I2C_Dev *dev, uint8_t devAddress, uint16_t memAddress,
     }
     i2c_master_write(cmd, (uint8_t *)data, len, I2C_MASTER_ACK_EN);
     i2c_master_stop(cmd);
-    esp_err_t err = i2c_master_cmd_begin(dev->def->i2cPort, cmd, (TickType_t)5);
+    esp_err_t err = i2c_master_cmd_begin(dev->def->i2cPort, cmd, (TickType_t)I2C_TIMEOUT);
     i2c_cmd_link_delete(cmd);
 
     xSemaphoreGive(dev->isBusFreeMutex);

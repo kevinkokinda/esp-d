@@ -409,7 +409,14 @@ static void sensorsDeviceInit(void)
     };
 
     i2cdevInit(I2C0_DEV);
+
     mpu6050Init(I2C0_DEV);
+    mpu6050Reset();
+    vTaskDelay(M2T(100)); // Wait for reset to finish
+    mpu6050SetSleepEnabled(false);
+    vTaskDelay(M2T(10)); // Short delay after wake
+    mpu6050SetClockSource(MPU6050_CLOCK_PLL_XGYRO);
+    vTaskDelay(M2T(100)); // Wait for PLL to stabilize
 
     if (mpu6050TestConnection() == true) {
         DEBUG_PRINTI("MPU6050 I2C connection [OK].\n");
@@ -419,16 +426,6 @@ static void sensorsDeviceInit(void)
         assert(0);
     }
 
-    mpu6050Reset();
-    vTaskDelay(M2T(50));
-    // Activate mpu6050
-    mpu6050SetSleepEnabled(false);
-    // Delay until registers are reset
-    vTaskDelay(M2T(100));
-    // Set x-axis gyro as clock source
-    mpu6050SetClockSource(MPU6050_CLOCK_PLL_XGYRO);
-    // Delay until clock is set and stable
-    vTaskDelay(M2T(200));
     // Enable temp sensor
     mpu6050SetTempSensorEnabled(true);
     // Disable interrupts

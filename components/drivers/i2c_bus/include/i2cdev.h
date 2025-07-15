@@ -39,7 +39,7 @@ typedef I2cDrv    I2C_Dev;
 #define i2cdevWrite16 i2cdevWriteReg16
 #define i2cdevRead16  i2cdevReadReg16
 
-#define I2C_TIMEOUT 5
+#define I2C_TIMEOUT 1000
 #define I2CDEV_CLK_TS (1000000 / 100000)
 
 #define I2C_MASTER_ACK_EN   true    /*!< Enable ack check for master */
