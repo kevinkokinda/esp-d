@@ -35,6 +35,8 @@
 
 void app_main()
 {
+    motorsTest();
+
     /*
     * Initialize the platform and Launch the system task
     * app_main will initialize and start everything

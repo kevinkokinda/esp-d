@@ -33,22 +33,19 @@
 #include "log.h"
 #define DEBUG_MODULE "MOTORS"
 #include "debug_cf.h"
+#include "platform.h"
+#include "crtp.h"
 
-static uint16_t motorsConvBitsTo16(uint16_t bits);
-static uint16_t motorsConv16ToBits(uint16_t bits);
-
-uint32_t motor_ratios[] = {0, 0, 0, 0};
-
-void motorsPlayTone(uint16_t frequency, uint16_t duration_msec);
-void motorsPlayMelody(uint16_t *notes);
-void motorsBeep(int id, bool enable, uint16_t frequency, uint16_t ratio);
-
-const MotorPerifDef **motorMap; /* Current map configuration */
+extern void platform_motors_pwm_set_all(uint16_t m1, uint16_t m2, uint16_t m3, uint16_t m4);
 
 const uint32_t MOTORS[] = {MOTOR_M1, MOTOR_M2, MOTOR_M3, MOTOR_M4};
+uint32_t motor_ratios[] = {0, 0, 0, 0};
+const MotorPerifDef **motorMap;
 
 const uint16_t testsound[NBR_OF_MOTORS] = {A4, A5, F5, D5};
 
+// This is the command set by the stabilizer
+static uint16_t motorCmd[MOTOR_COUNT];
 static bool isInit = false;
 static bool isTimerInit = false;
 
@@ -107,11 +104,12 @@ bool pwm_timmer_init()
      */
     ledc_timer_config_t ledc_timer = {
         .duty_resolution = MOTORS_PWM_BITS, // resolution of PWM duty
-        .freq_hz = 15000,					// frequency of PWM signal
+        .freq_hz = 50,				// frequency of PWM signal
         .speed_mode = LEDC_LOW_SPEED_MODE, // timer mode
         .timer_num = LEDC_TIMER_0,			// timer index
         // .clk_cfg = LEDC_AUTO_CLK,              // Auto select the source clock
     };
+    DEBUG_PRINTI("Set PWM freq to 50Hz for brushless");
 
     // Set configuration of timer0 for high speed channels
     if (ledc_timer_config(&ledc_timer) == ESP_OK) {
@@ -156,35 +154,72 @@ void motorsDeInit(const MotorPerifDef **motorMapSelect)
 
 bool motorsTest(void)
 {
-    // int i;
+  vTaskDelay(M2T(1000));
+  
+  DEBUG_PRINTI("motor test starting...\n");
+  // For BLHeli 20A ESC 
+  // for more info go to docs --blhelis github page
+  ledc_timer_config_t ledc_timer = {
+      .duty_resolution = LEDC_TIMER_10_BIT,  
+      .freq_hz = 24000,  
+      .speed_mode = LEDC_LOW_SPEED_MODE,
+      .timer_num = LEDC_TIMER_1,
+  };
+  ledc_timer_config(&ledc_timer);
+  
+  ledc_channel_config_t ledc_channel = {
+      .channel = LEDC_CHANNEL_0,
+      .duty = 0,
+      .gpio_num = 18,  
+      .speed_mode = LEDC_LOW_SPEED_MODE,
+      .timer_sel = LEDC_TIMER_1
+  };
+  ledc_channel_config(&ledc_channel);
+  
+  // BLHeli standard: 1000us = min, 2000us = max
+  // At 24kHz: period = 41.67us, so 1000us = 24 ticks, 2000us = 48 ticks
+  // For 10-bit (1024 max): 1000us = 24/41.67 * 1024 = 590, 2000us = 1180
+  const uint16_t escMin = 590;  
+  const uint16_t escMax = 1180;  
+  
+  DEBUG_PRINTI("pwm setup done, min=%u max=%u\n", escMin, escMax);
+  
+  DEBUG_PRINTI("arming esc...\n");
+  ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, escMin);
+  ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
+  vTaskDelay(M2T(8000));
+  
+  DEBUG_PRINTI("esc should be calibrated now\n");
+  vTaskDelay(M2T(2000)); 
+   
+  DEBUG_PRINTI("checking if motor can spin freely...\n");
+  vTaskDelay(M2T(5000));  
+  
+  DEBUG_PRINTI("testing motor spin\n");
+  
+  DEBUG_PRINTI("70%% throttle\n");
+  uint16_t spinThrottle = escMin + ((escMax - escMin) * 7 / 10); 
+  ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, spinThrottle);
+  ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
+  vTaskDelay(M2T(4000));
+  
+  DEBUG_PRINTI("90%% throttle\n");
+  spinThrottle = escMin + ((escMax - escMin) * 9 / 10); 
+  ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, spinThrottle);
+  ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
+  vTaskDelay(M2T(4000));
+  
+  DEBUG_PRINTI("back to idle\n");
+  ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, escMin);
+  ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
+  
+  DEBUG_PRINTI("motor test done\n");
+  
+  while(1) { vTaskDelay(M2T(1000)); }
 
-    // for (i = 0; i < sizeof(MOTORS) / sizeof(*MOTORS); i++) {
-    //     if (motorMap[i]->drvType == BRUSHED) {
-#ifdef ACTIVATE_STARTUP_SOUND
-    //         motorsBeep(MOTORS[i], true, testsound[i], (uint16_t)(MOTORS_TIM_BEEP_CLK_FREQ / A4) / 20);
-    //         vTaskDelay(M2T(MOTORS_TEST_ON_TIME_MS));
-    //         motorsBeep(MOTORS[i], false, 0, 0);
-    //         vTaskDelay(M2T(MOTORS_TEST_DELAY_TIME_MS));
-#else
-    //         motorsSetRatio(MOTORS[i], MOTORS_TEST_RATIO);
-    //         vTaskDelay(M2T(MOTORS_TEST_ON_TIME_MS));
-    //         motorsSetRatio(MOTORS[i], 0);
-    //         vTaskDelay(M2T(MOTORS_TEST_DELAY_TIME_MS));
-#endif
-    //     }
-    // }
-
-    // To test a single motor (e.g., motor 1), use this code:
-    DEBUG_PRINTI("Testing Motor 1");
-    motorsSetRatio(MOTOR_M1, MOTORS_TEST_RATIO);
-    vTaskDelay(M2T(1000)); // Run for 1 second
-    motorsSetRatio(MOTOR_M1, 0);
-
-
-    return isInit;
+  return isInit;
 }
 
-// Ithrust is thrust mapped for 65536 <==> 60 grams
 void motorsSetRatio(uint32_t id, uint16_t ithrust)
 {
     if (isInit) {
@@ -241,7 +276,6 @@ void motorsBeep(int id, bool enable, uint16_t frequency, uint16_t ratio)
     ledc_update_duty(motors_channel[id].speed_mode, motors_channel[id].channel);
 }
 
-// Play a tone with a given frequency and a specific duration in milliseconds (ms)
 void motorsPlayTone(uint16_t frequency, uint16_t duration_msec)
 {
     motorsBeep(MOTOR_M1, true, frequency, (uint16_t)(MOTORS_TIM_BEEP_CLK_FREQ / frequency) / 20);
@@ -255,12 +289,11 @@ void motorsPlayTone(uint16_t frequency, uint16_t duration_msec)
     motorsBeep(MOTOR_M4, false, frequency, 0);
 }
 
-// Plays a melody from a note array
 void motorsPlayMelody(uint16_t *notes)
 {
     int i = 0;
-    uint16_t note;     // Note in hz
-    uint16_t duration; // Duration in ms
+    uint16_t note;    
+    uint16_t duration; 
 
     do
     {
