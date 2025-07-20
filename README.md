@@ -1,7 +1,7 @@
 
-Zoltyck 
+Zoltyck  
 
-Custom hardware with autonomous capiblities. 
+Custom hardware with autonomous capiblities -
 
 Total cost of around $50 per drone for now.
 
