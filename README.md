@@ -1,5 +1,5 @@
 
-Zoltyck  
++Zoltyck  
 
 Custom hardware with autonomous capiblities -
 
